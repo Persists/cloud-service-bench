@@ -28,11 +28,11 @@ resource "google_compute_instance" "victoria" {
   boot_disk {
     initialize_params {
 	  size = 10
-      image = "ubuntu-2004-focal-v20231101"
+      image = "ubuntu-2004-focal-v20241115"
     }
   }
-    metadata_startup_script = file("startup_sut.sh")
 
+  metadata_startup_script = file("startup_sut.sh")
 
   network_interface {
     network = google_compute_network.vpc_network.id
