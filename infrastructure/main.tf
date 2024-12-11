@@ -42,3 +42,25 @@ resource "google_compute_instance" "victoria" {
   }
 }
 
+### BENCHMARK CLIENT INSTANCE
+resource "google_compute_instance" "client" {
+  name = "tsbs-r1"
+  machine_type = "e2-standard-4"
+
+  boot_disk {
+    initialize_params {
+       image = "ubuntu-2004-focal-v20241115"
+	  size = 20
+    }
+  }
+  metadata_startup_script = file("setup_go_client.sh")
+
+
+  network_interface {
+    network = google_compute_network.vpc_network.id
+    access_config {
+      # Include this section to give the VM an external IP address
+    }
+  }
+}
+
