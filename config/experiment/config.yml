@@ -1,0 +1,11 @@
+fluentd:
+  host: localhost
+  port: 24224
+
+generator:
+  name: Test
+  message-length: 100
+  sample-length: 100000
+  workers: 5
+  logs-per-second: 1
+  duration: 100
