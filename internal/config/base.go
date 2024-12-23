@@ -1,4 +1,4 @@
-package generator
+package config
 
 import (
 	"fmt"
@@ -7,7 +7,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type FluentdConfig struct {
+type ExperimentConfig struct {
+	Id string
+}
+
+type TcpConfig struct {
 	Host string `yaml:"host"`
 	Port int    `yaml:"port"`
 }
@@ -18,12 +22,20 @@ type GeneratorConfig struct {
 	SampleLength  int    `yaml:"sample-length"`
 	Workers       int    `yaml:"workers"`
 	LogsPerSecond int    `yaml:"logs-per-second"`
+	BatchesPerSec int    `yaml:"batches-per-second"`
 	Duration      int    `yaml:"duration"`
 }
 
+type ArchiveConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Path    string `yaml:"path"`
+}
+
 type Config struct {
-	Fluentd   FluentdConfig   `yaml:"fluentd"`
-	Generator GeneratorConfig `yaml:"generator"`
+	Experiment ExperimentConfig `yaml:"experiment"`
+	Fluentd    TcpConfig        `yaml:"fluentd"`
+	Generator  GeneratorConfig  `yaml:"generator"`
+	Archive    ArchiveConfig    `yaml:"archive"`
 }
 
 func validtateConfig(cfg *Config) error {
@@ -46,6 +58,14 @@ func validtateConfig(cfg *Config) error {
 
 	if cfg.Generator.LogsPerSecond <= 0 {
 		return fmt.Errorf("logs-per-second must be greater than 0")
+	}
+
+	if cfg.Generator.BatchesPerSec <= 0 {
+		return fmt.Errorf("batches-per-second must be greater than 0")
+	}
+
+	if cfg.Generator.LogsPerSecond%cfg.Generator.BatchesPerSec != 0 {
+		return fmt.Errorf("logs-per-second must be divisible by batches-per-second")
 	}
 
 	if cfg.Generator.Duration <= 0 {

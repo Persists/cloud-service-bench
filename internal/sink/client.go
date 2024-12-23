@@ -41,7 +41,7 @@ func main() {
 // countEntries estimates the number of entries by counting occurrences of "tag"
 func countEntries(body []byte) {
 	count := 0
-	tagKeyword := `"tag":`
+	tagKeyword := `severity`
 	for i := 0; i < len(body)-len(tagKeyword)+1; i++ {
 		if string(body[i:i+len(tagKeyword)]) == tagKeyword {
 			count++

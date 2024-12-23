@@ -36,11 +36,11 @@ func (g *LogSynthesizer) getRandomSeverity() Severity {
 }
 
 // SynthesizeLog generates a log message with random severity, message, and tags
-func (g *LogSynthesizer) SynthesizeLog() LogMessage {
+func (g *LogSynthesizer) SynthesizeLog() *LogMessage {
 	severity := g.getRandomSeverity()
 	message := g.getRandomMessage()
 	tags := []string{"tag1", "tag2"}
-	return LogMessage{
+	return &LogMessage{
 		Severity: severity,
 		Name:     g.Name,
 		Message:  message,
@@ -49,8 +49,8 @@ func (g *LogSynthesizer) SynthesizeLog() LogMessage {
 }
 
 // SynthesizeLogs generates n log messages
-func (g *LogSynthesizer) SynthesizeLogs(n int) []LogMessage {
-	logs := make([]LogMessage, n)
+func (g *LogSynthesizer) SynthesizeLogs(n int) []*LogMessage {
+	logs := make([]*LogMessage, n)
 	for i := 0; i < n; i++ {
 		logs[i] = g.SynthesizeLog()
 	}

@@ -55,3 +55,6 @@ terraform.rc
 
 # Lock Files
 *.lock.hcl
+
+# everything in the results directory
+results/*
