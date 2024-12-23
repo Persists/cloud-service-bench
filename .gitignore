@@ -58,3 +58,5 @@ terraform.rc
 
 # everything in the results directory
 results/*
+
+.DS_Store
