@@ -17,18 +17,21 @@ type TcpConfig struct {
 }
 
 type GeneratorConfig struct {
-	Name          string `yaml:"name"`
-	MessageLength int    `yaml:"message-length"`
-	SampleLength  int    `yaml:"sample-length"`
-	Workers       int    `yaml:"workers"`
-	LogsPerSecond int    `yaml:"logs-per-second"`
-	BatchesPerSec int    `yaml:"batches-per-second"`
-	Duration      int    `yaml:"duration"`
+	MessageLength int `yaml:"message-length"`
+	SampleLength  int `yaml:"sample-length"`
+	Workers       int `yaml:"workers"`
+	LogsPerSecond int `yaml:"logs-per-second"`
+	BatchesPerSec int `yaml:"batches-per-second"`
+	Duration      int `yaml:"duration"`
 }
 
 type ArchiveConfig struct {
-	Enabled bool   `yaml:"enabled"`
-	Path    string `yaml:"path"`
+	Enabled   bool   `yaml:"enabled"`
+	Directory string `yaml:"directory"`
+}
+
+type Sink struct {
+	Port int `yaml:"port"`
 }
 
 type Config struct {
@@ -36,13 +39,10 @@ type Config struct {
 	Fluentd    TcpConfig        `yaml:"fluentd"`
 	Generator  GeneratorConfig  `yaml:"generator"`
 	Archive    ArchiveConfig    `yaml:"archive"`
+	Sink       Sink             `yaml:"sink"`
 }
 
 func validtateConfig(cfg *Config) error {
-
-	if cfg.Generator.Name == "" {
-		return fmt.Errorf("name must be provided")
-	}
 
 	if cfg.Generator.MessageLength <= 0 {
 		return fmt.Errorf("message-length must be greater than 0")
@@ -77,7 +77,17 @@ func validtateConfig(cfg *Config) error {
 	}
 
 	if cfg.Fluentd.Port <= 0 {
-		return fmt.Errorf("fluentd.port must be greater than 0")
+		return fmt.Errorf("fluentd.port must be specified")
+	}
+
+	if cfg.Archive.Enabled {
+		if cfg.Archive.Directory == "" {
+			return fmt.Errorf("archive.directory must be provided")
+		}
+	}
+
+	if cfg.Sink.Port <= 0 {
+		return fmt.Errorf("sink.port must be specified")
 	}
 
 	return nil

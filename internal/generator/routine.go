@@ -1,26 +1,25 @@
 package generator
 
 import (
-	"cloud-service-bench/internal/archive"
 	"cloud-service-bench/internal/connection"
 	"cloud-service-bench/internal/log"
 	"fmt"
 	"sync"
 	"time"
-
-	"cloud-service-bench/internal/config"
 )
 
-func routine(
-	TcpConfig *config.TcpConfig,
+// routine is responsible for sending log messages at a certain rate.
+// Each routine has a own connection to the server.
+// It sends messages at a rate of g.GeneratorConfig.LogsPerSecond.
+// It sends messages in batches, the amount of batches per second is defined by g.GeneratorConfig.BatchesPerSec.
+// The function waits on a channel to stop sending messages.
+func (g *GeneratorClient) routine(
+	workerID int,
 	samples []*log.LogMessage,
-	ticksPerSecond float64,
-	messagesPerTick int,
 	ready *sync.WaitGroup,
 	stop chan struct{},
-	archiver archive.Archiver,
 ) error {
-	connectionClient := connection.NewConnectionClient(TcpConfig.Host, TcpConfig.Port)
+	connectionClient := connection.NewConnectionClient(g.TCPConfig.Host, g.TCPConfig.Port)
 	err := connectionClient.Connect()
 	if err != nil {
 		return err
@@ -31,21 +30,23 @@ func routine(
 	ready.Done()
 	ready.Wait()
 
-	ticker := time.NewTicker(time.Second / time.Duration(ticksPerSecond))
-	index := 0
+	ticker := time.NewTicker(time.Second / time.Duration(g.GeneratorConfig.BatchesPerSec))
+	messagesPerTick := g.GeneratorConfig.LogsPerSecond / g.GeneratorConfig.BatchesPerSec
 
+	globCounter := 0
 	for {
 		select {
 		case <-ticker.C:
 			for i := 0; i < messagesPerTick; i++ {
-				log := *samples[index]
+				log := *samples[globCounter%len(samples)]
 				log.Time = time.Now()
+				// The tags are used to identify the worker and the message number later on.
+				log.Tags = []string{fmt.Sprintf("worker-%d", workerID), fmt.Sprintf("%d", globCounter)}
 				err = connectionClient.SendMessage(log.ToFluentdMessage())
 				if err != nil {
-					fmt.Errorf("failed to send message: %w", err)
+					fmt.Printf("failed to send message: %v\n", err)
 				}
-				index = (index + 1) % len(samples)
-				archiver.Write(log.ToFluentdMessage())
+				globCounter++
 			}
 		case <-stop:
 			return nil

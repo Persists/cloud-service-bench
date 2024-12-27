@@ -2,36 +2,33 @@ package log
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 )
 
 type LogMessage struct {
-	Time     time.Time
-	Severity Severity
-	Name     string
-	Message  string
-	Tags     []string
+	Time     time.Time `json:"timestamp"`
+	Severity Severity  `json:"severity"`
+	Name     string    `json:"name"`
+	Message  string    `json:"message"`
+	Tags     []string  `json:"tags"`
 }
 
-type Severity int
+type Severity string
 
 const (
-	INFO Severity = iota
-	WARN
-	ERROR
-	DEBUG
+	INFO  Severity = "INFO"
+	WARN  Severity = "WARN"
+	ERROR Severity = "ERROR"
+	DEBUG Severity = "DEBUG"
 )
-
-func (s Severity) String() string {
-	return [...]string{"INFO", "WARN", "ERROR", "DEBUG"}[s]
-}
-
-var logMessageRegex = regexp.MustCompile(`^(?P<time>[^\]]+) (?P<severity>[^ ]+) (?P<name>[^ ]+) \[(?P<tags>[^\]]+)\] (?P<message>.+)$`)
 
 // CreateFluentdMessage generates a Fluentd-compatible log message string
 func (log *LogMessage) ToFluentdMessage() string {
 	tags := strings.Join(log.Tags, ",")
-	return fmt.Sprintf("%s %s %s [%s] %s\n", log.Time.Format("2006-01-02T15:04:05.000Z"), log.Severity.String(), log.Name, tags, log.Message)
+	return fmt.Sprintf("%s %s %s [%s] %s\n", log.Time.Format("2006-01-02T15:04:05.000Z"), log.Severity, log.Name, tags, log.Message)
+}
+
+func (log *LogMessage) ToArchivable() string {
+	return fmt.Sprintf("%s %s %s\n", log.Time.Format("2006-01-02T15:04:05.000Z"), log.Name, log.Tags)
 }

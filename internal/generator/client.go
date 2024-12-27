@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"cloud-service-bench/internal/archive"
 	"cloud-service-bench/internal/config"
 	"cloud-service-bench/internal/log"
 	"fmt"
@@ -10,23 +9,23 @@ import (
 )
 
 type GeneratorClient struct {
-	archiver        archive.Archiver
-	FluentdConfig   *config.TcpConfig
+	TCPConfig       *config.TcpConfig
 	LogSynthesizer  *log.LogSynthesizer
 	GeneratorConfig *config.GeneratorConfig
 }
 
-func NewClient(generatorConfig *config.GeneratorConfig, tcpConfig *config.TcpConfig, ac archive.Archiver) *GeneratorClient {
+func NewClient(generatorConfig *config.GeneratorConfig, tcpConfig *config.TcpConfig, name string) *GeneratorClient {
 	client := &GeneratorClient{
-		archiver:        ac,
-		FluentdConfig:   tcpConfig,
-		LogSynthesizer:  log.NewLogSynthesizer(generatorConfig.Name, generatorConfig.MessageLength),
+		TCPConfig:       tcpConfig,
+		LogSynthesizer:  log.NewLogSynthesizer(name, generatorConfig.MessageLength),
 		GeneratorConfig: generatorConfig,
 	}
 
 	return client
 }
 
+// Start starts the generator client.
+// It synthesizes logs and starts the worker routines.
 func (g *GeneratorClient) Start() {
 	syntheticLogs := g.LogSynthesizer.SynthesizeLogs(g.GeneratorConfig.SampleLength)
 
@@ -36,14 +35,11 @@ func (g *GeneratorClient) Start() {
 	ready.Add(g.GeneratorConfig.Workers)
 	for i := 0; i < g.GeneratorConfig.Workers; i++ {
 		go func() {
-			err := routine(
-				g.FluentdConfig,
+			err := g.routine(
+				i,
 				syntheticLogs,
-				float64(g.GeneratorConfig.BatchesPerSec),
-				g.GeneratorConfig.LogsPerSecond/g.GeneratorConfig.BatchesPerSec,
 				&ready,
 				stop,
-				g.archiver,
 			)
 			if err != nil {
 				fmt.Println(err)
@@ -56,8 +52,5 @@ func (g *GeneratorClient) Start() {
 	<-time.After(time.Duration(g.GeneratorConfig.Duration) * time.Second)
 	close(stop)
 
-	// TODO: print all sent messages to a file (include metadata (zone, instance, worker, etc))
-
-	// TODO: send a last log, so the http server knows when experiment is finished
 	fmt.Println("Finished")
 }

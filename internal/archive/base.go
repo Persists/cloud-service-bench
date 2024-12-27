@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
-	"strconv"
 )
 
 // ArchiveClient is a struct that contains the configuration for the archive client
 type ArchiveClient struct {
+	debugMode bool
 	config    *config.Config
 	writer    *bufio.Writer
 	writeChan chan string
@@ -19,6 +20,9 @@ type ArchiveClient struct {
 
 type Archiver interface {
 	Write(line string)
+	Close()
+	Start()
+	Flush()
 }
 
 // systemsBlockSize returns the block size of the system
@@ -49,49 +53,102 @@ func systemsBlockSize() (int, error) {
 }
 
 // NewArchiveClient creates a new ArchiveClient
-func NewFileArchiveClient(config *config.Config, outDir string, isGenerator bool) *ArchiveClient {
-	var filePath string
-	if isGenerator {
-		filePath = outDir + fmt.Sprintf("/%s-%s-lps%s.log", config.Generator.Name, config.Experiment.Id, strconv.Itoa(config.Generator.LogsPerSecond))
-	} else {
-		//Todo: Implement name for the http client
-		filePath = outDir + fmt.Sprintf("/%s-%s-lps%s.log", "HTTP", config.Experiment.Id, strconv.Itoa(config.Generator.LogsPerSecond))
+func NewFileArchiveClient(config *config.Config, name string, zone string) (*ArchiveClient, error) {
+	if !config.Archive.Enabled {
+		return &ArchiveClient{
+			debugMode: true,
+		}, nil
 	}
 
+	outDir := config.Archive.Directory
+	err := os.MkdirAll(outDir, os.ModePerm)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	filePath := filepath.Join(outDir, fmt.Sprintf("%s-%s-lps%d.log", name, config.Experiment.Id, config.Generator.LogsPerSecond))
 	file, err := os.Create(filePath)
 	if err != nil {
-		fmt.Println("Error creating file:", err)
-		return nil
+		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
 
 	bs, err := systemsBlockSize()
 	if err != nil {
-		fmt.Println("Error getting block size:", err)
-		return nil
+		return nil, fmt.Errorf("failed to get block size: %w", err)
 	}
 
 	writer := bufio.NewWriterSize(file, bs)
 
-	return &ArchiveClient{
+	ac := &ArchiveClient{
 		config:    config,
 		writer:    writer,
 		writeChan: make(chan string),
 	}
+
+	err = ac.addMetadataToFile(name, zone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add metadata to file: %w", err)
+	}
+
+	return ac, nil
+
 }
 
 func (ac *ArchiveClient) Start() {
+	if ac.debugMode {
+		go func() {
+			for line := range ac.writeChan {
+				fmt.Println(line)
+			}
+		}()
+	}
 	go ac.writeToFile()
 }
 
 func (ac *ArchiveClient) writeToFile() {
-	for {
-		select {
-		case line := <-ac.writeChan:
-			ac.writer.WriteString(line)
-		}
+	for line := range ac.writeChan {
+		fmt.Println("WriteToFile")
+		ac.writer.WriteString(line)
+		ac.writer.Flush()
 	}
 }
 
 func (ac *ArchiveClient) Write(line string) {
-	// ac.writeChan <- line
+	ac.writeChan <- line
+}
+
+func (ac *ArchiveClient) Close() {
+	close(ac.writeChan)
+}
+
+func (ac *ArchiveClient) addMetadataToFile(instanceName, zone string) error {
+	if ac.debugMode {
+		return nil
+	}
+
+	metadata := fmt.Sprintf(
+		"Experiment ID: %s\nInstance Name: %s\nZone: %s\nLogs Per Second: %d\nBatches Per Second: %d\nDuration: %d seconds\n\n",
+		ac.config.Experiment.Id,
+		instanceName,
+		zone,
+		ac.config.Generator.LogsPerSecond,
+		ac.config.Generator.BatchesPerSec,
+		ac.config.Generator.Duration,
+	)
+
+	_, err := ac.writer.WriteString(metadata)
+	if err != nil {
+		return fmt.Errorf("failed to write metadata to file: %w", err)
+	}
+
+	err = ac.writer.Flush()
+	if err != nil {
+		return fmt.Errorf("failed to flush metadata to file: %w", err)
+	}
+
+	return nil
+}
+
+func (ac *ArchiveClient) Flush() {
+	ac.writer.Flush()
 }

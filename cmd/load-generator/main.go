@@ -1,10 +1,10 @@
 package main
 
 import (
-	"cloud-service-bench/internal/archive"
 	"cloud-service-bench/internal/config"
 	"cloud-service-bench/internal/generator"
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -15,9 +15,13 @@ func main() {
 		return
 	}
 
-	ac := archive.NewFileArchiveClient(config, "./results", true)
-	go ac.Start()
-	client := generator.NewClient(&config.Generator, &config.Fluentd, ac)
+	instanceName := os.Getenv("INSTANCE_NAME")
+	if instanceName == "" {
+		fmt.Println("INSTANCE_NAME environment variable is not set")
+		return
+	}
+
+	client := generator.NewClient(&config.Generator, &config.Fluentd, instanceName)
 
 	start := time.Now()
 

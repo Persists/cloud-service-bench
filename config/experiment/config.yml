@@ -6,14 +6,16 @@ fluentd:
   port: 24224
 
 generator:
-  name: Test
   message-length: 100
   sample-length: 1000
-  workers: 40
-  logs-per-second: 40000
-  batches-per-second: 10
+  workers: 2
+  logs-per-second: 1
+  batches-per-second: 1
   duration: 60
 
 archive:
   enabled: true
-  directory: /tmp/logs
+  directory: ./results
+
+sink:
+  port: 8080
