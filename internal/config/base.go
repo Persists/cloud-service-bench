@@ -113,3 +113,16 @@ func LoadConfig(filePath string) (*Config, error) {
 
 	return &cfg, nil
 }
+
+func GenerateMetadata(config *Config, instanceName, zone string) string {
+	return fmt.Sprintf(
+		"Experiment ID: %s\nInstance Name: %s\nZone: %s\nLogs Per Second: %d\nBatches Per Second: %d\nDuration: %d seconds\n\n",
+		config.Experiment.Id,
+		instanceName,
+		zone,
+		config.Generator.LogsPerSecond,
+		config.Generator.BatchesPerSec,
+		config.Generator.Duration,
+	)
+
+}

@@ -30,5 +30,5 @@ func (log *LogMessage) ToFluentdMessage() string {
 }
 
 func (log *LogMessage) ToArchivable() string {
-	return fmt.Sprintf("%s %s %s\n", log.Time.Format("2006-01-02T15:04:05.000Z"), log.Name, log.Tags)
+	return fmt.Sprintf("%s %s %s [%s %s]", log.Time.Format("2006-01-02T15:04:05.000Z"), log.Name, log.Tags, log.Severity, log.Message)
 }

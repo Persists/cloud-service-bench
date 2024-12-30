@@ -2,18 +2,15 @@ package archive
 
 import (
 	"bufio"
-	"cloud-service-bench/internal/config"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 )
 
 // ArchiveClient is a struct that contains the configuration for the archive client
 type ArchiveClient struct {
 	debugMode bool
-	config    *config.Config
 	writer    *bufio.Writer
 	writeChan chan string
 }
@@ -53,20 +50,12 @@ func systemsBlockSize() (int, error) {
 }
 
 // NewArchiveClient creates a new ArchiveClient
-func NewFileArchiveClient(config *config.Config, name string, zone string) (*ArchiveClient, error) {
-	if !config.Archive.Enabled {
-		return &ArchiveClient{
-			debugMode: true,
-		}, nil
-	}
+func NewFileArchiveClient(filePath string, metadata string) (*ArchiveClient, error) {
 
-	outDir := config.Archive.Directory
-	err := os.MkdirAll(outDir, os.ModePerm)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create directory: %w", err)
-	}
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to create directory: %w", err)
+	// }
 
-	filePath := filepath.Join(outDir, fmt.Sprintf("%s-%s-lps%d.log", name, config.Experiment.Id, config.Generator.LogsPerSecond))
 	file, err := os.Create(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
@@ -80,14 +69,17 @@ func NewFileArchiveClient(config *config.Config, name string, zone string) (*Arc
 	writer := bufio.NewWriterSize(file, bs)
 
 	ac := &ArchiveClient{
-		config:    config,
 		writer:    writer,
 		writeChan: make(chan string),
 	}
 
-	err = ac.addMetadataToFile(name, zone)
+	_, err = ac.writer.WriteString(metadata)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add metadata to file: %w", err)
+	}
+	err = ac.writer.Flush()
+	if err != nil {
+		return nil, fmt.Errorf("failed to flush metadata to file: %w", err)
 	}
 
 	return ac, nil
@@ -114,39 +106,11 @@ func (ac *ArchiveClient) writeToFile() {
 }
 
 func (ac *ArchiveClient) Write(line string) {
-	ac.writeChan <- line
+	ac.writeChan <- line + "\n"
 }
 
 func (ac *ArchiveClient) Close() {
 	close(ac.writeChan)
-}
-
-func (ac *ArchiveClient) addMetadataToFile(instanceName, zone string) error {
-	if ac.debugMode {
-		return nil
-	}
-
-	metadata := fmt.Sprintf(
-		"Experiment ID: %s\nInstance Name: %s\nZone: %s\nLogs Per Second: %d\nBatches Per Second: %d\nDuration: %d seconds\n\n",
-		ac.config.Experiment.Id,
-		instanceName,
-		zone,
-		ac.config.Generator.LogsPerSecond,
-		ac.config.Generator.BatchesPerSec,
-		ac.config.Generator.Duration,
-	)
-
-	_, err := ac.writer.WriteString(metadata)
-	if err != nil {
-		return fmt.Errorf("failed to write metadata to file: %w", err)
-	}
-
-	err = ac.writer.Flush()
-	if err != nil {
-		return fmt.Errorf("failed to flush metadata to file: %w", err)
-	}
-
-	return nil
 }
 
 func (ac *ArchiveClient) Flush() {
