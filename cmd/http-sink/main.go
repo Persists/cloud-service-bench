@@ -34,7 +34,7 @@ func main() {
 
 	metadata := "Job: Sink\n"
 	metadata += config.GenerateMetadata(cfg, instanceName, zone)
-	filePath := directory + "/" + fmt.Sprintf("%s_%s_%dlps.log", instanceName, cfg.Experiment.Id, cfg.Generator.LogsPerSecond)
+	filePath := directory + "/" + fmt.Sprintf("%s_%s_%dw_%dlps.log", instanceName, cfg.Experiment.Id, cfg.Generator.Workers, cfg.Generator.LogsPerSecond)
 
 	ac, err := archive.NewFileArchiveClient(filePath, metadata)
 	if err != nil {
