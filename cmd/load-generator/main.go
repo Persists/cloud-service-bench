@@ -9,6 +9,13 @@ import (
 )
 
 func main() {
+	startAtStr := os.Args[1]
+	startAt, err := time.Parse(time.RFC3339, startAtStr)
+	if err != nil {
+		fmt.Println("Invalid start time format:", err)
+		return
+	}
+
 	config, error := config.LoadConfig("./config/experiment/config.yml")
 	if error != nil {
 		fmt.Println(error)
@@ -25,7 +32,7 @@ func main() {
 
 	start := time.Now()
 
-	client.Start()
+	client.Start(startAt)
 
 	elapsed := time.Since(start)
 

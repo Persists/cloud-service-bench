@@ -10,7 +10,7 @@ resource "google_compute_instance" "fluentd" {
     }
   }
 
-  metadata_startup_script = file("startup_sut.sh")
+  metadata_startup_script = file("setup_sut.sh")
 
   network_interface {
     network = google_compute_network.vpc_network.id

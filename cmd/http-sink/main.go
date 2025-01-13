@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+
 	cfg, error := config.LoadConfig("./config/experiment/config.yml")
 	if error != nil {
 		fmt.Println(error)

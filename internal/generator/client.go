@@ -26,10 +26,11 @@ func NewClient(generatorConfig *config.GeneratorConfig, tcpConfig *config.TcpCon
 
 // Start starts the generator client.
 // It synthesizes logs and starts the worker routines.
-func (g *GeneratorClient) Start() {
+func (g *GeneratorClient) Start(startAt time.Time) {
 	syntheticLogs := g.LogSynthesizer.SynthesizeLogs(g.GeneratorConfig.SampleLength)
 
 	ready := sync.WaitGroup{}
+	ready.Add(1)
 	stop := make(chan struct{})
 
 	ready.Add(g.GeneratorConfig.Workers)
@@ -46,6 +47,11 @@ func (g *GeneratorClient) Start() {
 			}
 		}()
 	}
+
+	go func() {
+		<-time.After(time.Until(startAt))
+		ready.Done()
+	}()
 
 	ready.Wait()
 
