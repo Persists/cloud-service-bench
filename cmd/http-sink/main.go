@@ -24,7 +24,8 @@ func main() {
 	instanceName := config.GetEnv("INSTANCE_NAME")
 	zone := config.GetEnv("ZONE")
 
-	directory := "./results"
+	directory := cfg.Archive.Directory
+	fmt.Println("Directory: ", directory)
 	err := os.MkdirAll(directory, os.ModePerm)
 	if err != nil {
 		fmt.Println(err)
@@ -33,7 +34,7 @@ func main() {
 
 	metadata := "Job: Sink\n"
 	metadata += config.GenerateMetadata(cfg, instanceName, zone)
-	filePath := directory + fmt.Sprintf("%s_%s_%dlps.log", instanceName, cfg.Experiment.Id, cfg.Generator.LogsPerSecond)
+	filePath := directory + "/" + fmt.Sprintf("%s_%s_%dlps.log", instanceName, cfg.Experiment.Id, cfg.Generator.LogsPerSecond)
 
 	ac, err := archive.NewFileArchiveClient(filePath, metadata)
 	if err != nil {

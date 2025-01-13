@@ -3,11 +3,17 @@ package sink
 import (
 	"cloud-service-bench/internal/archive"
 	"cloud-service-bench/internal/log"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 )
+
+type LogBatch struct {
+	ArrivalTime time.Time            `json:"arrivalTime"`
+	LogMessages []log.SlimLogMessage `json:"logMessages"`
+}
 
 type HttpSink struct {
 	archiver archive.Archiver
@@ -23,6 +29,7 @@ func NewHttpSink(archiver archive.Archiver) *HttpSink {
 // It reads the body of the request, decodes the JSON log messages, and writes them to the archiver
 func (hs *HttpSink) Handler(w http.ResponseWriter, r *http.Request) {
 	requestTime := time.Now()
+	fmt.Println("Received request at", requestTime)
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
@@ -41,15 +48,24 @@ func (hs *HttpSink) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logEntryCount := len(logMessages)
-
+	var slimLogMessages []log.SlimLogMessage
 	for _, logMessage := range logMessages {
-		archivable := fmt.Sprintf("%s: [%s]", requestTime.Format("2006-01-02T15:04:05.000Z"), logMessage.ToArchivable())
-		hs.archiver.Write(archivable)
+		slimLogMessages = append(slimLogMessages, logMessage.ToSlimLogMessage())
+	}
+	fmt.Println("Received", len(logMessages), "log messages")
+
+	logBatch := LogBatch{
+		ArrivalTime: requestTime,
+		LogMessages: slimLogMessages,
 	}
 
-	fmt.Println("Request processed in", time.Since(requestTime))
-	fmt.Println("Archived", logEntryCount, "log entries")
+	jsonLogBatch, err := json.Marshal(logBatch)
+	if err != nil {
+		hs.archiver.Write(fmt.Sprintf("%s | Error marshalling | Batch length: %d", requestTime.Format("2006-01-02T15:04:05.000Z"), len(logMessages)))
+		return
+	}
+
+	hs.archiver.Write(string(jsonLogBatch))
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "Request received successfully")

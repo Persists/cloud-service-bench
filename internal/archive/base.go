@@ -52,10 +52,6 @@ func systemsBlockSize() (int, error) {
 // NewArchiveClient creates a new ArchiveClient
 func NewFileArchiveClient(filePath string, metadata string) (*ArchiveClient, error) {
 
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to create directory: %w", err)
-	// }
-
 	file, err := os.Create(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file: %w", err)
@@ -99,7 +95,6 @@ func (ac *ArchiveClient) Start() {
 
 func (ac *ArchiveClient) writeToFile() {
 	for line := range ac.writeChan {
-		fmt.Println("WriteToFile")
 		ac.writer.WriteString(line)
 		ac.writer.Flush()
 	}

@@ -1,6 +1,7 @@
 package log
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -29,6 +30,11 @@ func (log *LogMessage) ToFluentdMessage() string {
 	return fmt.Sprintf("%s %s %s [%s] %s\n", log.Time.Format("2006-01-02T15:04:05.000Z"), log.Severity, log.Name, tags, log.Message)
 }
 
-func (log *LogMessage) ToArchivable() string {
-	return fmt.Sprintf("%s %s %s [%s %s]", log.Time.Format("2006-01-02T15:04:05.000Z"), log.Name, log.Tags, log.Severity, log.Message)
+func (log *LogMessage) ToArchivable() (string, error) {
+	jsonBytes, err := json.Marshal(log)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
+
 }

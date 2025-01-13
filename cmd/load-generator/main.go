@@ -9,7 +9,9 @@ import (
 )
 
 func main() {
+	fmt.Println("time: ", time.Now())
 	startAtStr := os.Args[1]
+	fmt.Println("startAtStr: ", startAtStr)
 	startAt, err := time.Parse(time.RFC3339, startAtStr)
 	if err != nil {
 		fmt.Println("Invalid start time format:", err)

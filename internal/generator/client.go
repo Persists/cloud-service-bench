@@ -49,11 +49,14 @@ func (g *GeneratorClient) Start(startAt time.Time) {
 	}
 
 	go func() {
+		fmt.Println("Waiting for start time:", time.Until(startAt))
 		<-time.After(time.Until(startAt))
 		ready.Done()
 	}()
 
 	ready.Wait()
+
+	fmt.Println("Started")
 
 	<-time.After(time.Duration(g.GeneratorConfig.Duration) * time.Second)
 	close(stop)

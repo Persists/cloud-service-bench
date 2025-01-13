@@ -38,7 +38,7 @@ func main() {
 
 	metadata := "Job: Monitor\n"
 	metadata += config.GenerateMetadata(cfg, instanceName, zone)
-	filePath := directory + "/" + fmt.Sprintf("monitor_%s_%s_%dlps.csv", instanceName, cfg.Experiment.Id, cfg.Generator.LogsPerSecond)
+	filePath := directory + "/" + fmt.Sprintf("monitor_%s_%s_%dlps.log", instanceName, cfg.Experiment.Id, cfg.Generator.LogsPerSecond)
 
 	ac, err := archive.NewFileArchiveClient(filePath, metadata)
 	if err != nil {
