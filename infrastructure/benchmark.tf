@@ -2,9 +2,9 @@ resource "google_compute_instance_template" "go_client_template" {
     machine_type = "e2-standard-4"
     disk {
         source_image = "ubuntu-2004-focal-v20241115"
-        size = 25
+        disk_size_gb = 25
     }
-    metadata_startup_script = file("setup_go_client.sh")
+    metadata_startup_script = file("startup_go_client.sh")
     network_interface {
         network = google_compute_network.vpc_network.id
         access_config {

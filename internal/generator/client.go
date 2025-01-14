@@ -56,7 +56,7 @@ func (g *GeneratorClient) Start(startAt time.Time) {
 
 	ready.Wait()
 
-	fmt.Println("Started")
+	fmt.Println("Started the generator")
 
 	<-time.After(time.Duration(g.GeneratorConfig.Duration) * time.Second)
 	close(stop)

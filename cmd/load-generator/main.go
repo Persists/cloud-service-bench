@@ -3,18 +3,29 @@ package main
 import (
 	"cloud-service-bench/internal/config"
 	"cloud-service-bench/internal/generator"
+	"flag"
 	"fmt"
-	"os"
 	"time"
 )
 
 func main() {
-	fmt.Println("time: ", time.Now())
-	startAtStr := os.Args[1]
-	fmt.Println("startAtStr: ", startAtStr)
-	startAt, err := time.Parse(time.RFC3339, startAtStr)
+	startAtStr := flag.String("start-at", "", "Time to start the load generator in RFC3339 format")
+	instanceName := flag.String("instance-name", "", "The name of the instance")
+	flag.Parse()
+
+	if *startAtStr == "" {
+		fmt.Println("start-at flag is not set")
+		return
+	}
+
+	if *instanceName == "" {
+		fmt.Println("instance-name flag is not set")
+		return
+	}
+
+	startAt, err := time.Parse(time.RFC3339, *startAtStr)
 	if err != nil {
-		fmt.Println("Invalid start time format:", err)
+		fmt.Println("Invalid startAt time format. Please use RFC3339 format.")
 		return
 	}
 
@@ -24,13 +35,7 @@ func main() {
 		return
 	}
 
-	instanceName := os.Getenv("INSTANCE_NAME")
-	if instanceName == "" {
-		fmt.Println("INSTANCE_NAME environment variable is not set")
-		return
-	}
-
-	client := generator.NewClient(&config.Generator, &config.Fluentd, instanceName)
+	client := generator.NewClient(&config.Generator, &config.Fluentd, *instanceName)
 
 	start := time.Now()
 

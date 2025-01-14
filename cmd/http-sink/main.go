@@ -4,6 +4,7 @@ import (
 	"cloud-service-bench/internal/archive"
 	"cloud-service-bench/internal/config"
 	"cloud-service-bench/internal/sink"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,14 +16,20 @@ import (
 
 func main() {
 
+	instanceName := flag.String("instance-name", "", "The name of the instance")
+	zone := flag.String("zone", "europe-west3-c", "The zone of the instance")
+	flag.Parse()
+
+	if *instanceName == "" {
+		fmt.Println("instance-name flag is not set")
+		return
+	}
+
 	cfg, error := config.LoadConfig("./config/experiment/config.yml")
 	if error != nil {
 		fmt.Println(error)
 		return
 	}
-
-	instanceName := config.GetEnv("INSTANCE_NAME")
-	zone := config.GetEnv("ZONE")
 
 	directory := cfg.Archive.Directory
 	fmt.Println("Directory: ", directory)
@@ -33,8 +40,8 @@ func main() {
 	}
 
 	metadata := "Job: Sink\n"
-	metadata += config.GenerateMetadata(cfg, instanceName, zone)
-	filePath := directory + "/" + fmt.Sprintf("%s_%s_%dw_%dlps.log", instanceName, cfg.Experiment.Id, cfg.Generator.Workers, cfg.Generator.LogsPerSecond)
+	metadata += config.GenerateMetadata(cfg, *instanceName, *zone)
+	filePath := directory + "/" + fmt.Sprintf("%s_%s_%dw_%dlps.log", *instanceName, cfg.Experiment.Id, cfg.Generator.Workers, cfg.Generator.LogsPerSecond)
 
 	ac, err := archive.NewFileArchiveClient(filePath, metadata)
 	if err != nil {

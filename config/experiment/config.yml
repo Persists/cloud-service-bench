@@ -2,16 +2,16 @@ experiment:
   id: 1
 
 fluentd:
-  host: localhost
+  host: fluentd-sut.c.cloud-service-be.internal
   port: 24224
 
 generator:
-  message-length: 100
+  message-length: 200
   sample-length: 1000
-  workers: 25
-  logs-per-second: 2000
+  workers: 10
+  logs-per-second: 100
   batches-per-second: 10
-  duration: 60
+  duration: 600 # seconds
 
 archive:
   enabled: true

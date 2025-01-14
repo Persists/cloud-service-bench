@@ -45,6 +45,8 @@ func (g *GeneratorClient) routine(
 				err = connectionClient.SendMessage(log.ToFluentdMessage())
 				if err != nil {
 					fmt.Printf("failed to send message: %v\n", err)
+					// Break here, to prevent the routine from sending more messages, it will continue with the next tick.
+					break
 				}
 				globCounter++
 			}

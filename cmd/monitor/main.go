@@ -4,6 +4,7 @@ import (
 	"cloud-service-bench/internal/archive"
 	"cloud-service-bench/internal/config"
 	"cloud-service-bench/internal/monitoring"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -12,14 +13,20 @@ import (
 )
 
 func main() {
+	instanceName := flag.String("instance-name", "", "The name of the instance")
+	zone := flag.String("zone", "europe-west3-c", "The zone of the instance")
+	flag.Parse()
+
+	if *instanceName == "" {
+		fmt.Println("instance-name flag is not set")
+		return
+	}
+
 	cfg, err := config.LoadConfig("./config/experiment/config.yml")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	instanceName := config.GetEnv("INSTANCE_NAME")
-	zone := config.GetEnv("ZONE")
 
 	CPUMonitor := &monitoring.CPUMonitor{}
 	MemMonitor := &monitoring.MemMonitor{}
@@ -37,8 +44,8 @@ func main() {
 	}
 
 	metadata := "Job: Monitor\n"
-	metadata += config.GenerateMetadata(cfg, instanceName, zone)
-	filePath := directory + "/" + fmt.Sprintf("monitor_%s_%s_%dlps.log", instanceName, cfg.Experiment.Id, cfg.Generator.LogsPerSecond)
+	metadata += config.GenerateMetadata(cfg, *instanceName, *zone)
+	filePath := directory + "/" + fmt.Sprintf("monitor_%s_%s_w%d_%dlps.log", *instanceName, cfg.Experiment.Id, cfg.Generator.Workers, cfg.Generator.LogsPerSecond)
 
 	ac, err := archive.NewFileArchiveClient(filePath, metadata)
 	if err != nil {
