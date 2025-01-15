@@ -3,6 +3,9 @@
 N_GENERATORS=$1
 N_SINKS=$2
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/wait_startup.sh"
+
 if [ -z "$N_GENERATORS" ] || [ -z "$N_SINKS" ]; then
     echo "Usage: $0 <n_generators> <n_sinks>"
     exit 1

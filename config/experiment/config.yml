@@ -9,7 +9,7 @@ generator:
   message-length: 200
   sample-length: 1000
   workers: 10
-  logs-per-second: 100
+  logs-per-second: 1000
   batches-per-second: 10
   duration: 600 # seconds
 
