@@ -10,6 +10,10 @@ type ConnectionClient struct {
 	address    string
 }
 
+func (cc *ConnectionClient) IsConnectionActive() bool {
+	return cc.connection != nil
+}
+
 func NewConnectionClient(host string, port int) *ConnectionClient {
 	return &ConnectionClient{
 		address: fmt.Sprintf("%s:%d", host, port),

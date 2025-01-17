@@ -4,62 +4,53 @@ import (
 	"cloud-service-bench/internal/config"
 	"cloud-service-bench/internal/log"
 	"fmt"
-	"sync"
-	"time"
 )
 
 type GeneratorClient struct {
-	TCPConfig       *config.TcpConfig
-	LogSynthesizer  *log.LogSynthesizer
-	GeneratorConfig *config.GeneratorConfig
+	ExperimentConfig *config.ExperimentConfig
+	workers          []*Worker
+	startChan        chan struct{}
+	stopChan         chan struct{}
 }
 
-func NewClient(generatorConfig *config.GeneratorConfig, tcpConfig *config.TcpConfig, name string) *GeneratorClient {
-	client := &GeneratorClient{
-		TCPConfig:       tcpConfig,
-		LogSynthesizer:  log.NewLogSynthesizer(name, generatorConfig.MessageLength),
-		GeneratorConfig: generatorConfig,
+func (g *GeneratorClient) GetTotalMessages() int {
+	totalMessages := 0
+	for _, worker := range g.workers {
+		totalMessages += worker.TotalMessages
 	}
-
-	return client
+	return totalMessages
 }
 
-// Start starts the generator client.
-// It synthesizes logs and starts the worker routines.
-func (g *GeneratorClient) Start(startAt time.Time) {
-	syntheticLogs := g.LogSynthesizer.SynthesizeLogs(g.GeneratorConfig.SampleLength)
+func NewClient(generatorConfig *config.GeneratorConfig, experimentConfig *config.ExperimentConfig, tcpConfig *config.TcpConfig, name string) *GeneratorClient {
+	workers := make([]*Worker, generatorConfig.Workers)
+	logSynthesizer := log.NewLogSynthesizer(name, generatorConfig.MessageLength)
+	syntheticLogs := logSynthesizer.SynthesizeLogs(generatorConfig.SampleLength)
+	startChan := make(chan struct{})
+	stopChan := make(chan struct{})
 
-	ready := sync.WaitGroup{}
-	ready.Add(1)
-	stop := make(chan struct{})
-
-	ready.Add(g.GeneratorConfig.Workers)
-	for i := 0; i < g.GeneratorConfig.Workers; i++ {
-		go func() {
-			err := g.routine(
-				i,
-				syntheticLogs,
-				&ready,
-				stop,
-			)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}()
+	for i := 0; i < generatorConfig.Workers; i++ {
+		worker, err := newWorker(tcpConfig, syntheticLogs, startChan, stopChan, i)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+		}
+		workers[i] = worker
 	}
 
-	go func() {
-		fmt.Println("Waiting for start time:", time.Until(startAt))
-		<-time.After(time.Until(startAt))
-		ready.Done()
-	}()
+	return &GeneratorClient{
+		ExperimentConfig: experimentConfig,
+		workers:          workers,
+		startChan:        startChan,
+		stopChan:         stopChan,
+	}
+}
 
-	ready.Wait()
+// Start starts the workers
+func (g *GeneratorClient) Start() {
+	close(g.startChan)
+}
 
-	fmt.Println("Started the generator")
-
-	<-time.After(time.Duration(g.GeneratorConfig.Duration) * time.Second)
-	close(stop)
-
-	fmt.Println("Finished")
+// Stop stops the workers
+func (g *GeneratorClient) Stop() {
+	close(g.stopChan)
 }

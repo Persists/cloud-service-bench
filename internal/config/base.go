@@ -8,7 +8,10 @@ import (
 )
 
 type ExperimentConfig struct {
-	Id string
+	Id       string `yaml:"id"`
+	Duration int    `yaml:"duration"`
+	WarmUp   int    `yaml:"warmup"`
+	CoolDown int    `yaml:"cooldown"`
 }
 
 type TcpConfig struct {
@@ -20,9 +23,6 @@ type GeneratorConfig struct {
 	MessageLength int `yaml:"message-length"`
 	SampleLength  int `yaml:"sample-length"`
 	Workers       int `yaml:"workers"`
-	LogsPerSecond int `yaml:"logs-per-second"`
-	BatchesPerSec int `yaml:"batches-per-second"`
-	Duration      int `yaml:"duration"`
 }
 
 type ArchiveConfig struct {
@@ -44,6 +44,22 @@ type Config struct {
 
 func validtateConfig(cfg *Config) error {
 
+	if cfg.Experiment.Id == "" {
+		return fmt.Errorf("experiment.id must be provided")
+	}
+
+	if cfg.Experiment.Duration <= 0 {
+		return fmt.Errorf("experiment.duration must be greater than 0")
+	}
+
+	if cfg.Experiment.WarmUp < 0 {
+		return fmt.Errorf("experiment.warmup must be greater than or equal to 0")
+	}
+
+	if cfg.Experiment.CoolDown < 0 {
+		return fmt.Errorf("experiment.cooldown must be greater than or equal to 0")
+	}
+
 	if cfg.Generator.MessageLength <= 0 {
 		return fmt.Errorf("message-length must be greater than 0")
 	}
@@ -54,22 +70,6 @@ func validtateConfig(cfg *Config) error {
 
 	if cfg.Generator.Workers <= 0 {
 		return fmt.Errorf("workers must be greater than 0")
-	}
-
-	if cfg.Generator.LogsPerSecond <= 0 {
-		return fmt.Errorf("logs-per-second must be greater than 0")
-	}
-
-	if cfg.Generator.BatchesPerSec <= 0 {
-		return fmt.Errorf("batches-per-second must be greater than 0")
-	}
-
-	if cfg.Generator.LogsPerSecond%cfg.Generator.BatchesPerSec != 0 {
-		return fmt.Errorf("logs-per-second must be divisible by batches-per-second")
-	}
-
-	if cfg.Generator.Duration <= 0 {
-		return fmt.Errorf("duration must be greater than 0")
 	}
 
 	if cfg.Fluentd.Host == "" {
@@ -116,14 +116,12 @@ func LoadConfig(filePath string) (*Config, error) {
 
 func GenerateMetadata(config *Config, instanceName, zone string) string {
 	return fmt.Sprintf(
-		"Experiment ID: %s\nInstance Name: %s\nZone: %s\nWorkers: %d\nLogs Per Second: %d\nBatches Per Second: %d\nDuration: %d seconds\nMessage Length: %d\nSample Length: %d\n",
+		"Experiment ID: %s\nInstance Name: %s\nZone: %s\nWorkers: %d\nDuration: %d seconds\nMessage Length: %d\nSample Length: %d\n",
 		config.Experiment.Id,
 		instanceName,
 		zone,
 		config.Generator.Workers,
-		config.Generator.LogsPerSecond,
-		config.Generator.BatchesPerSec,
-		config.Generator.Duration,
+		config.Experiment.Duration,
 		config.Generator.MessageLength,
 		config.Generator.SampleLength,
 	)

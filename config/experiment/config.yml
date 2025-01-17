@@ -1,20 +1,23 @@
 experiment:
   id: 1
+  warmup: 5 # seconds
+  duration: 600 # seconds
+  cooldown: 180 # seconds
 
 fluentd:
-  host: fluentd-sut.c.cloud-service-be.internal
+  host: localhost
+  # host: fluentd-sut.c.cloud-service-be.internal
   port: 24224
 
 generator:
   message-length: 200
   sample-length: 1000
-  workers: 10
-  logs-per-second: 1000
-  batches-per-second: 10
-  duration: 600 # seconds
+  workers: 30
+  logs-per-second: 10000 # Deprecated
+  batches-per-second: 10 # Deprecated
 
 archive:
-  enabled: true
+  enabled: false
   directory: ./results
 
 sink:

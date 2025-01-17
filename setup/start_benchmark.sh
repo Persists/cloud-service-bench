@@ -11,16 +11,17 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/wait_startup.sh"
 
+START_TIME=$(date -u -v+2M +"%Y-%m-%dT%H:%M:%SZ")
+
 for i in $(seq -f "%02g" 1 $N_SINKS); do
     gcloud compute scp ./config/experiment/config.yml sink-$i:~/config.yml --zone=europe-west3-c
     gcloud compute ssh sink-$i --zone=europe-west3-c --command "sudo mv ~/config.yml /csb/cloud-service-bench/config/experiment/config.yml"
-    gcloud compute ssh sink-$i --zone=europe-west3-c --command "cd /csb/cloud-service-bench; sudo bash -c './sink --instance-name=sink-$i &> /var/log/benchmark.log &'"
+    gcloud compute ssh sink-$i --zone=europe-west3-c --command "cd /csb/cloud-service-bench; sudo bash -c './sink --instance-name=sink-$i --start-at=\"${START_TIME}\" &> /var/log/benchmark.log &'"
 done
 
 gcloud compute ssh fluentd-sut --zone=europe-west3-c --command \
-    "cd /csb/cloud-service-bench; sudo bash -c './monitor --instance-name=fluentd-sut &> /var/log/benchmark.log &'"
+    "cd /csb/cloud-service-bench; sudo bash -c './monitor --instance-name=fluentd-sut --start-at=\"${START_TIME}\" &> /var/log/benchmark.log &'"
 
-START_TIME=$(date -u -v+0M +"%Y-%m-%dT%H:%M:%SZ")
 
 for i in $(seq -f "%02g" 1 $N_GENERATORS); do
     gcloud compute scp ./config/experiment/config.yml generator-$i:~/config.yml --zone=europe-west3-c

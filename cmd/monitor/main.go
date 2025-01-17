@@ -4,21 +4,16 @@ import (
 	"cloud-service-bench/internal/archive"
 	"cloud-service-bench/internal/config"
 	"cloud-service-bench/internal/monitoring"
-	"flag"
+	"cloud-service-bench/internal/timeline"
 	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
 func main() {
-	instanceName := flag.String("instance-name", "", "The name of the instance")
-	zone := flag.String("zone", "europe-west3-c", "The zone of the instance")
-	flag.Parse()
-
-	if *instanceName == "" {
-		fmt.Println("instance-name flag is not set")
+	flags, err := config.GetFlags()
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
@@ -34,18 +29,17 @@ func main() {
 
 	monitor := monitoring.NewMonitor(CPUMonitor, MemMonitor, NetworkMonitor)
 
-	ticker := time.NewTicker(1 * time.Second)
-
-	directory := "./results"
-	err = os.MkdirAll(directory, os.ModePerm)
+	err = os.MkdirAll(cfg.Archive.Directory, os.ModePerm)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	metadata := "Job: Monitor\n"
-	metadata += config.GenerateMetadata(cfg, *instanceName, *zone)
-	filePath := directory + "/" + fmt.Sprintf("monitor_%s_%s_w%d_%dlps.log", *instanceName, cfg.Experiment.Id, cfg.Generator.Workers, cfg.Generator.LogsPerSecond)
+	metadata += config.GenerateMetadata(cfg, flags.InstanceName, flags.Zone)
+
+	fmt.Println(metadata)
+	filePath := cfg.Archive.Directory + "/" + fmt.Sprintf("monitor_%s_%s_w%d.log", flags.InstanceName, cfg.Experiment.Id, cfg.Generator.Workers)
 
 	ac, err := archive.NewFileArchiveClient(filePath, metadata)
 	if err != nil {
@@ -54,24 +48,37 @@ func main() {
 	}
 	ac.Start()
 
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	t := &timeline.TimeLine{}
 
-	go func() {
-		<-sigChan
-		fmt.Println("Received interrupt signal, flushing archive client...")
-		ac.Flush()
-		os.Exit(0)
-	}()
+	// Set the warm-up, experiment and cool-down phases
+	t.SetWarmUp(time.Duration(cfg.Experiment.WarmUp)*time.Second, func() {
+		ac.Write("Warm-up phase, starting monitoring at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+		ticker := time.NewTicker(1 * time.Second)
+		for range ticker.C {
+			stats, err := monitor.GetStats()
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 
-	for range ticker.C {
-		stats, err := monitor.GetStats()
-		if err != nil {
-			fmt.Println(err)
-			return
+			ac.Write(stats.String())
 		}
+	})
+	t.SetExperiment(time.Duration(cfg.Experiment.Duration)*time.Second, func() {
+		ac.Write("Experiment phase, continue monitoring at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+	})
+	t.SetCoolDown(time.Duration(cfg.Experiment.CoolDown)*time.Second, func() {
+		ac.Write("Cool-down phase, continue monitoring  at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+	})
 
-		ac.Write(stats.String())
-		ac.Flush()
+	startAt := flags.StartAt
+	if startAt.Before(time.Now()) {
+		startAt = time.Now()
 	}
+
+	// Run the timeline (warm-up, experiment, cool-down)
+	t.Run(startAt)
+
+	ac.Write("Finished at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+	ac.Close()
 }

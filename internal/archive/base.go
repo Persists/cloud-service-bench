@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"runtime"
+	"syscall"
 )
 
 // ArchiveClient is a struct that contains the configuration for the archive client
@@ -69,7 +71,7 @@ func NewFileArchiveClient(filePath string, metadata string) (*ArchiveClient, err
 		writeChan: make(chan string),
 	}
 
-	_, err = ac.writer.WriteString(metadata)
+	_, err = ac.writer.WriteString(metadata + "\n")
 	if err != nil {
 		return nil, fmt.Errorf("failed to add metadata to file: %w", err)
 	}
@@ -83,10 +85,18 @@ func NewFileArchiveClient(filePath string, metadata string) (*ArchiveClient, err
 }
 
 func (ac *ArchiveClient) Start() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		ac.Close()
+		os.Exit(0)
+	}()
+
 	if ac.debugMode {
 		go func() {
-			for line := range ac.writeChan {
-				fmt.Println(line)
+			for range ac.writeChan {
 			}
 		}()
 	}
@@ -105,6 +115,7 @@ func (ac *ArchiveClient) Write(line string) {
 }
 
 func (ac *ArchiveClient) Close() {
+	ac.writer.Flush()
 	close(ac.writeChan)
 }
 

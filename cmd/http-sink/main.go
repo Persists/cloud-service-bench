@@ -4,24 +4,18 @@ import (
 	"cloud-service-bench/internal/archive"
 	"cloud-service-bench/internal/config"
 	"cloud-service-bench/internal/sink"
-	"flag"
+	"cloud-service-bench/internal/timeline"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
 func main() {
-
-	instanceName := flag.String("instance-name", "", "The name of the instance")
-	zone := flag.String("zone", "europe-west3-c", "The zone of the instance")
-	flag.Parse()
-
-	if *instanceName == "" {
-		fmt.Println("instance-name flag is not set")
+	flags, err := config.GetFlags()
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
@@ -33,49 +27,53 @@ func main() {
 
 	directory := cfg.Archive.Directory
 	fmt.Println("Directory: ", directory)
-	err := os.MkdirAll(directory, os.ModePerm)
+	err = os.MkdirAll(directory, os.ModePerm)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	metadata := "Job: Sink\n"
-	metadata += config.GenerateMetadata(cfg, *instanceName, *zone)
-	filePath := directory + "/" + fmt.Sprintf("%s_%s_%dw_%dlps.log", *instanceName, cfg.Experiment.Id, cfg.Generator.Workers, cfg.Generator.LogsPerSecond)
+	metadata += config.GenerateMetadata(cfg, flags.InstanceName, flags.Zone)
+
+	fmt.Println(metadata)
+	filePath := directory + "/" + fmt.Sprintf("%s_%s_%dw.log", flags.InstanceName, cfg.Experiment.Id, cfg.Generator.Workers)
 
 	ac, err := archive.NewFileArchiveClient(filePath, metadata)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	defer ac.Close()
 	ac.Start()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
 	sink := sink.NewHttpSink(ac)
 
-	// effectively an infinite timer
-	timer := time.NewTimer(time.Hour * 24 * 365 * 100)
+	http.HandleFunc("/fluentd", sink.Handler)
 
-	http.HandleFunc("/fluentd", func(w http.ResponseWriter, r *http.Request) {
-		timer.Reset(time.Second * 10)
-		sink.Handler(w, r)
-	})
-
-	fmt.Println("Server is listening on port", cfg.Sink.Port)
+	fmt.Printf("Starting sink on port %d\n", cfg.Sink.Port)
 	server := &http.Server{Addr: fmt.Sprintf(":%d", cfg.Sink.Port)}
 
-	go func() {
-		log.Fatal(server.ListenAndServe())
-	}()
+	t := &timeline.TimeLine{}
 
-	select {
-	case <-sigChan:
-		ac.Write(fmt.Sprintf("Finished at %s, because of a signal", time.Now().Format("2006-01-02T15:04:05.000Z")))
-	case <-timer.C:
-		ac.Write(fmt.Sprintf("Finished at %s, because the timer expired", time.Now().Format("2006-01-02T15:04:05.000Z")))
+	// Set the warm-up, experiment and cool-down phases
+	t.SetWarmUp(time.Duration(cfg.Experiment.WarmUp)*time.Second, func() {
+		ac.Write("Warm-up phase, starting sink at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+	})
+	t.SetExperiment(time.Duration(cfg.Experiment.Duration)*time.Second, func() {
+		ac.Write("Experiment phase, starting sink at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+		log.Fatal(server.ListenAndServe())
+	})
+	t.SetCoolDown(time.Duration(cfg.Experiment.CoolDown)*time.Second, func() {
+		ac.Write("Cool-down phase, continue sink at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+	})
+
+	startAt := flags.StartAt
+	if startAt.Before(time.Now()) {
+		startAt = time.Now()
 	}
-	ac.Flush()
+
+	// Run the timeline (warm-up, experiment, cool-down)
+	t.Run(startAt)
+
+	ac.Close()
 }
