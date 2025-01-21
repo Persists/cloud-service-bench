@@ -45,6 +45,7 @@ func (w *Worker) routine(
 ) {
 	defer w.connectionClient.Disconnect()
 	<-w.start
+	fmt.Printf("worker %d started\n", w.ID)
 	for {
 		select {
 		case <-w.stop:

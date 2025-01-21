@@ -31,6 +31,6 @@ for i in $(seq -f "%02g" 1 $N_GENERATORS); do
     gcloud compute ssh generator-$i --zone=europe-west3-c --command "cd /csb/cloud-service-bench; sudo bash -c './generator --instance-name=generator-$i --start-at=\"${START_TIME}\" &> /var/log/benchmark.log &'"
 done
 
-echo "Benchmark should start in approximately 
+echo "Benchmark should start in approximately 2 minutes."
 
 echo "Start scripts finished successfully."
