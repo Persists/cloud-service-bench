@@ -1,7 +1,7 @@
 variable "generator_count" {
   description = "Number of generator instances"
   type        = number
-  default     = 1
+  default     = 4
 }
 
 variable "sink_count" {

@@ -29,7 +29,6 @@ type Archiver interface {
 func systemsBlockSize() (int, error) {
 	os := runtime.GOOS
 
-	fmt.Println("OS:", os)
 	var cmd *exec.Cmd
 	if os == "linux" {
 		cmd = exec.Command("stat", "-fc", "%s", "/")

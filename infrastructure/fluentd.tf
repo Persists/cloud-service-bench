@@ -1,12 +1,12 @@
 ### SUT INSTANCE
 resource "google_compute_instance" "fluentd" {
   name = "fluentd-sut"
-  machine_type = "e2-highcpu-8"
+  machine_type = "e2-highcpu-16"
 
   boot_disk {
       initialize_params {
         image        = "ubuntu-2004-focal-v20241115"
-        size         = 25
+        size         = 50
       }
   }
 

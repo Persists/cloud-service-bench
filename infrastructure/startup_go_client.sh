@@ -7,10 +7,10 @@ echo 'export PATH=$PATH:/usr/local/go/bin' >> /etc/profile
 source /etc/profile
 echo 'Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin:/usr/local/go/bin"' | sudo tee /etc/sudoers.d/spath
 
-mkdir csb
+sudo mkdir csb
 cd csb
 
-git clone https://github.com/Persists/cloud-service-bench.git
+sudo git clone https://github.com/Persists/cloud-service-bench.git
 cd cloud-service-bench
 sudo go build  -o ./sink ./cmd/http-sink/main.go
 sudo go build  -o ./generator ./cmd/load-generator/main.go

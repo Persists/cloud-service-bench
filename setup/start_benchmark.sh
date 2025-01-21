@@ -13,6 +13,8 @@ source "$SCRIPT_DIR/wait_startup.sh"
 
 START_TIME=$(date -u -v+2M +"%Y-%m-%dT%H:%M:%SZ")
 
+echo "Starting benchmark at $START_TIME"
+
 for i in $(seq -f "%02g" 1 $N_SINKS); do
     gcloud compute scp ./config/experiment/config.yml sink-$i:~/config.yml --zone=europe-west3-c
     gcloud compute ssh sink-$i --zone=europe-west3-c --command "sudo mv ~/config.yml /csb/cloud-service-bench/config/experiment/config.yml"
@@ -28,5 +30,7 @@ for i in $(seq -f "%02g" 1 $N_GENERATORS); do
     gcloud compute ssh generator-$i --zone=europe-west3-c --command "sudo mv ~/config.yml /csb/cloud-service-bench/config/experiment/config.yml"
     gcloud compute ssh generator-$i --zone=europe-west3-c --command "cd /csb/cloud-service-bench; sudo bash -c './generator --instance-name=generator-$i --start-at=\"${START_TIME}\" &> /var/log/benchmark.log &'"
 done
+
+echo "Benchmark should start in approximately 
 
 echo "Start scripts finished successfully."

@@ -58,13 +58,14 @@ func main() {
 	// Set the warm-up, experiment and cool-down phases
 	t.SetWarmUp(time.Duration(cfg.Experiment.WarmUp)*time.Second, func() {
 		ac.Write("Warm-up phase, starting sink at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
-	})
-	t.SetExperiment(time.Duration(cfg.Experiment.Duration)*time.Second, func() {
-		ac.Write("Experiment phase, starting sink at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+		<-time.After(time.Duration(cfg.Experiment.WarmUp/2) * time.Second)
 		log.Fatal(server.ListenAndServe())
 	})
+	t.SetExperiment(time.Duration(cfg.Experiment.Duration)*time.Second, func() {
+		ac.Write("\n" + "Experiment phase, continue sink at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+	})
 	t.SetCoolDown(time.Duration(cfg.Experiment.CoolDown)*time.Second, func() {
-		ac.Write("Cool-down phase, continue sink at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
+		ac.Write("\n" + "Cool-down phase, continue sink at " + time.Now().Format("2006-01-02T15:04:05.000Z") + "\n")
 	})
 
 	startAt := flags.StartAt

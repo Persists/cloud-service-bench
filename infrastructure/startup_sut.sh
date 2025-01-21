@@ -10,10 +10,10 @@ echo 'Defaults        secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr
 curl -fsSL https://toolbelt.treasuredata.com/sh/install-ubuntu-focal-fluent-package5.sh | sh
 sudo systemctl start fluentd.service
 
-mkdir csb
+sudo mkdir csb
 cd csb
 
-git clone https://github.com/Persists/cloud-service-bench.git
+sudo git clone https://github.com/Persists/cloud-service-bench.git
 cd cloud-service-bench
 sudo go build  -o ./monitor ./cmd/monitor/main.go
 
