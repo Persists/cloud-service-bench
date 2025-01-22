@@ -1,7 +1,7 @@
 experiment:
-  id: 3
-  warmup: 30 # seconds
-  duration: 600 # seconds
+  id: 121.001
+  warmup: 60 # seconds
+  duration: 660 # seconds
   cooldown: 30 # seconds
 
 fluentd:
@@ -10,14 +10,14 @@ fluentd:
   port: 24224
 
 generator:
-  message-length: 200
+  message-length: 250
   sample-length: 1000
-  workers: 16
+  workers: 25
   logs-per-second: 10000 # Deprecated
   batches-per-second: 10 # Deprecated
 
 archive:
-  enabled: false
+  enabled: true
   directory: ./results
 
 sink:

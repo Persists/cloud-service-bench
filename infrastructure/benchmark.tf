@@ -1,5 +1,5 @@
 resource "google_compute_instance_template" "go_client_template" {  
-    machine_type = "e2-standard-8"
+    machine_type = "e2-standard-4"
     disk {
         source_image = "ubuntu-2004-focal-v20241115"
         disk_size_gb = 25
@@ -22,7 +22,7 @@ resource "google_compute_instance_from_template" "generator" {
 resource "google_compute_instance" "sink" {
   count = var.sink_count
   name = format("sink-%02d", count.index + 1)
-  machine_type = "e2-standard-8"
+  machine_type = "e2-standard-16"
 
   boot_disk {
       initialize_params {

@@ -6,71 +6,62 @@ from tqdm import tqdm
 from collections import defaultdict
 import os
 
+# Path configurations
+CPU_LOG_FILE = "../results/1.2worker.memory/data/fluentd-sut/monitor_fluentd-sut_3_w16.log"
+RESULTS_DIR = ["../results/1.4worker.memory/data/sink-01", "../results/2.4worker.memory/data/sink-01", "../results/3.4worker.memory/data/sink-01"]
+
 # Plot CPU Load
-def plot_cpu_load(cpu_log_dirs):
-    all_dfs = {}
+def plot_cpu_load(cpu_log_file):
+    timestamps = []
+    cpu_loads = []
 
-    for dir_or_file in cpu_log_dirs:
-        if os.path.isfile(dir_or_file):  # If it's a single file
-            files_to_process = [dir_or_file]
-        else:  # If it's a directory
-            files_to_process = [os.path.join(dir_or_file, f) for f in os.listdir(dir_or_file) if f.endswith(".log")]
+    try:
+        with open(cpu_log_file, "r") as file:
+            for line in file:
+                # Skip metadata or non-JSON lines
+                if not line.strip().startswith("{"):
+                    continue
+                # Parse the JSON line
+                data = json.loads(line)
+                timestamp_str = data["time"]
+                timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+                cpu_load = data["cpu"]["percentage"]
+                timestamps.append(timestamp)
+                cpu_loads.append(cpu_load)
 
-        for file_path in files_to_process:
-            file_name = os.path.basename(file_path)
-            timestamps = []
-            cpu_loads = []
+        # Convert to DataFrame
+        df = pd.DataFrame(cpu_loads, index=timestamps)
+        df.index.name = "Timestamp"
+        df.columns = [f"CPU {i}" for i in range(len(df.columns))]
 
-            try:
-                with open(file_path, "r") as file:
-                    for line in file:
-                        # Skip metadata or non-JSON lines
-                        if not line.strip().startswith("{"):
-                            continue
-                        # Parse the JSON line
-                        data = json.loads(line)
-                        timestamp_str = data["time"]
-                        timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
-                        cpu_load = data["cpu"]["percentage"]
-                        timestamps.append(timestamp)
-                        cpu_loads.append(cpu_load)
+        # Calculate total and average CPU load
+        df["Total CPU"] = df.sum(axis=1)
+        df["Average CPU"] = df["Total CPU"] / len(df.columns)
 
-                # Convert to DataFrame
-                df = pd.DataFrame(cpu_loads, index=timestamps)
-                df.index.name = "Timestamp"
-                df.columns = [f"CPU {i}" for i in range(len(df.columns))]
+        # Plot the CPU load
+        plt.figure(figsize=(12, 6))
+        for column in df.columns[:-2]:  # Exclude "Total CPU" and "Average CPU" columns
+            plt.plot(df.index, df[column], alpha=0.3, label=column)
+        plt.plot(df.index, df["Total CPU"], color="blue", label="Total CPU Load (1600%)", linewidth=2)
+        plt.plot(df.index, df["Average CPU"], color="red", label="Average CPU Load (%)", linewidth=2)
 
-                # Calculate total and average CPU load
-                df["Total CPU"] = df.sum(axis=1)
-                df["Average CPU"] = df["Total CPU"] / len(df.columns)
+        # Configure the plot
+        plt.title("CPU Load Over Time (Scaled to 1600%)")
+        plt.xlabel("Time")
+        plt.ylabel("CPU Load (%)")
+        plt.legend(loc="upper left", fontsize="small")
+        plt.grid(True)
+        plt.tight_layout()
 
-                # Normalize time to start from zero
-                start_time = df.index[0]
-                df["Elapsed Time"] = (df.index - start_time).total_seconds()
-                df.set_index("Elapsed Time", inplace=True)
+        # Show the plot
+        plt.show()
 
-                all_dfs[file_name] = df
-
-            except FileNotFoundError:
-                print(f"File not found: {file_path}")
-            except json.JSONDecodeError as e:
-                print(f"Error decoding JSON: {e}")
-
-    # Plot all data on one plot
-    plt.figure(figsize=(15, 7))
-
-    for file_name, df in all_dfs.items():
-        plt.plot(df.index / 60, df["Total CPU"], label=f"Total CPU ({file_name})")
-        plt.plot(df.index / 60, df["Average CPU"], label=f"Average CPU ({file_name})", linestyle="--")
-
-    plt.xticks(rotation=45, ha="right")
-    plt.xlabel("Elapsed Time (minutes)")
-    plt.ylabel("CPU Load (%)")
-    plt.title("CPU Load Over Time for Multiple Datasets")
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+    except FileNotFoundError:
+        print(f"File not found: {cpu_log_file}")
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 # Plot Throughput
 def plot_throughput(results_dirs):
@@ -160,7 +151,7 @@ def plot_throughput(results_dirs):
     for file_name, df_resampled in all_dfs.items():
         plt.plot(df_resampled.index.total_seconds() / 60, df_resampled['Throughput per Second'], label=file_name)
 
-    plt.xticks(rotation=45, ha="right")
+    plt.xticks(rotation=45, ha='right')
     plt.xlabel('Elapsed Time (minutes)')
     plt.ylabel('Throughput per Second (Messages per Second)')
     plt.title('Normalized Throughput per Second for All Files')
@@ -168,12 +159,10 @@ def plot_throughput(results_dirs):
     plt.tight_layout()
     plt.show()
 
-# Example usage
-plot_cpu_load(["../results/1.1worker.memory/data/fluentd-sut", "../results/2.1worker.memory/data/fluentd-sut", "../results/3.1worker.memory/data/fluentd-sut", 
-               "../results/1.2worker.memory/data/fluentd-sut", "../results/2.2worker.memory/data/fluentd-sut", "../results/3.2worker.memory/data/fluentd-sut",
-               "../results/1.4worker.memory/data/fluentd-sut", "../results/2.4worker.memory/data/fluentd-sut", "../results/3.4worker.memory/data/fluentd-sut",
-               "../results/1.6worker.memory/data/fluentd-sut", "../results/2.6worker.memory/data/fluentd-sut", "../results/3.6worker.memory/data/fluentd-sut",
-               "../results/1.10worker.memory.fail/data/fluentd-sut"])
-               
 
-# plot_throughput(["../results/1.1worker.memory/data/sink-01", "../results/2.1worker.memory/data/sink-01", "../results/3.1worker.memory/data/sink-01"])
+# Run both plots
+# plot_cpu_load(CPU_LOG_FILE)
+# plot_throughput(RESULTS_DIR)
+# plot_throughput(["../results/1.6worker.memory/data/sink-01", "../results/2.6worker.memory/data/sink-01", "../results/4.6worker.memory/data/sink-01"])
+#plot_throughput(["../results/1.2worker.memory/data/sink-01", "../results/2.2worker.memory/data/sink-01", "../results/3.2worker.memory/data/sink-01"])
+plot_throughput(["../results/1.1worker.memory/data/sink-01", "../results/2.1worker.memory/data/sink-01", "../results/3.1worker.memory/data/sink-01"])
