@@ -21,13 +21,11 @@ type MemStats struct {
 
 // GetMemStats retrieves the current memory usage statistics.
 func (m *MemMonitor) GetStats() (interface{}, error) {
-	// Retrieve memory statistics
 	mem, err := mem.VirtualMemory()
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a new MemStats instance
 	stats := &MemStats{
 		Total:      mem.Total,
 		Used:       mem.Used,

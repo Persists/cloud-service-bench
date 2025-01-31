@@ -16,6 +16,7 @@ type Worker struct {
 	TotalMessages    int
 }
 
+// newWorker creates a new Worker instance, initializes a connection client, and starts the worker routine.
 func newWorker(tcpConfig *config.TcpConfig, sampleLogs []*log.LogMessage, startChan chan struct{}, stopChan chan struct{}, id int) (*Worker, error) {
 	cc := connection.NewConnectionClient(
 		tcpConfig.Host,
@@ -40,6 +41,17 @@ func newWorker(tcpConfig *config.TcpConfig, sampleLogs []*log.LogMessage, startC
 	return worker, nil
 }
 
+// routine is a method of the Worker struct that continuously sends log messages
+// from the provided samples slice to a connection client until it receives a stop signal.
+// It starts by waiting for a start signal and then enters a loop where it sends messages
+// and increments the TotalMessages counter. When a stop signal is received, it prints the total
+// number of messages sent and exits the loop.
+//
+// Parameters:
+//
+//	samples []*log.LogMessage - A slice of log messages to be sent by the worker.
+//
+// The method also ensures that the connection client is disconnected when the routine ends.
 func (w *Worker) routine(
 	samples []*log.LogMessage,
 ) {

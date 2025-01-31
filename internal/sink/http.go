@@ -48,6 +48,7 @@ func (hs *HttpSink) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// to reduce the size of the log messages before archiving
 	var slimLogMessages []log.SlimLogMessage
 	for _, logMessage := range logMessages {
 		slimLogMessages = append(slimLogMessages, logMessage.ToSlimLogMessage())
@@ -59,12 +60,13 @@ func (hs *HttpSink) Handler(w http.ResponseWriter, r *http.Request) {
 		LogMessages: slimLogMessages,
 	}
 
+	// writing the log batch to the archiver
+	// if there is an error, write an error message to the archiver
 	jsonLogBatch, err := json.Marshal(logBatch)
 	if err != nil {
 		hs.archiver.Write(fmt.Sprintf("%s | Error marshalling | Batch length: %d", requestTime.Format("2006-01-02T15:04:05.000Z"), len(logMessages)))
 		return
 	}
-
 	hs.archiver.Write(string(jsonLogBatch))
 
 	w.WriteHeader(http.StatusOK)

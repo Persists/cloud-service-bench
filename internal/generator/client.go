@@ -21,6 +21,16 @@ func (g *GeneratorClient) GetTotalMessages() int {
 	return totalMessages
 }
 
+// NewClient creates a new instance of GeneratorClient with the provided configurations.
+// It initializes the workers, log synthesizer, and communication channels.
+//
+// It starts the workers by newWorker.
+//
+// Parameters:
+//   - generatorConfig: Configuration for the log generator, including the number of workers, message length, and sample length.
+//   - experimentConfig: Configuration for the experiment.
+//   - tcpConfig: Configuration for TCP connections.
+//   - name: Name identifier for the log synthesizer.
 func NewClient(generatorConfig *config.GeneratorConfig, experimentConfig *config.ExperimentConfig, tcpConfig *config.TcpConfig, name string) *GeneratorClient {
 	workers := make([]*Worker, generatorConfig.Workers)
 	logSynthesizer := log.NewLogSynthesizer(name, generatorConfig.MessageLength)

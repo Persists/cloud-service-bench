@@ -60,3 +60,5 @@ terraform.rc
 results/*
 
 .DS_Store
+
+.spyproject

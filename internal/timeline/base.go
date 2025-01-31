@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// TimeLine represents a timeline with three phases: WarmUp, Experiment, and CoolDown.
 type TimeLine struct {
 	warmUpDuration     time.Duration
 	warmUpAction       func()

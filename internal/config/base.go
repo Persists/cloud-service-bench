@@ -42,8 +42,8 @@ type Config struct {
 	Sink       Sink             `yaml:"sink"`
 }
 
+// validtateConfig checks if the config is valid
 func validtateConfig(cfg *Config) error {
-
 	if cfg.Experiment.Id == "" {
 		return fmt.Errorf("experiment.id must be provided")
 	}
@@ -94,6 +94,7 @@ func validtateConfig(cfg *Config) error {
 }
 
 // LoadSenderConfig reads a YAML file and unmarshals it into a Config struct
+// it also validates the config
 func LoadConfig(filePath string) (*Config, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -114,6 +115,7 @@ func LoadConfig(filePath string) (*Config, error) {
 	return &cfg, nil
 }
 
+// GenerateMetadata generates metadata for the experiment
 func GenerateMetadata(config *Config, instanceName, zone string) string {
 	return fmt.Sprintf(
 		"Experiment ID: %s\nInstance Name: %s\nZone: %s\nWorkers: %d\nDuration: %d seconds\nMessage Length: %d\nSample Length: %d\n",

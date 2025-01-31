@@ -2,15 +2,9 @@ package log
 
 import (
 	"encoding/json"
-	"time"
 )
 
-type SlimLogMessage struct {
-	Time time.Time `json:"timestamp"`
-	Name string    `json:"name"`
-	Tags []string  `json:"tags"`
-}
-
+// DecodeJson decodes a JSON byte array into a slice of LogMessages.
 func DecodeJson(body []byte) ([]LogMessage, error) {
 	var logMessages []LogMessage
 	if err := json.Unmarshal(body, &logMessages); err != nil {
@@ -19,6 +13,10 @@ func DecodeJson(body []byte) ([]LogMessage, error) {
 	return logMessages, nil
 }
 
+// ToSlimLogMessage converts a LogMessage to a SlimLogMessage
+// for archiving purposes.
+//
+// This is used to reduce the size of the log message before.
 func (log *LogMessage) ToSlimLogMessage() SlimLogMessage {
 	return SlimLogMessage{
 		Time: log.Time,

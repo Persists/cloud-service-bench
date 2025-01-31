@@ -169,11 +169,12 @@ def plot_throughput(results_dirs):
     plt.show()
 
 # Example usage
-plot_cpu_load(["../results/1.1worker.memory/data/fluentd-sut", "../results/2.1worker.memory/data/fluentd-sut", "../results/3.1worker.memory/data/fluentd-sut", 
-               "../results/1.2worker.memory/data/fluentd-sut", "../results/2.2worker.memory/data/fluentd-sut", "../results/3.2worker.memory/data/fluentd-sut",
-               "../results/1.4worker.memory/data/fluentd-sut", "../results/2.4worker.memory/data/fluentd-sut", "../results/3.4worker.memory/data/fluentd-sut",
-               "../results/1.6worker.memory/data/fluentd-sut", "../results/2.6worker.memory/data/fluentd-sut", "../results/3.6worker.memory/data/fluentd-sut",
-               "../results/1.10worker.memory.fail/data/fluentd-sut"])
+plot_cpu_load([
+    # "../results/1.1worker.memory/data/fluentd-sut", "../results/2.1worker.memory/data/fluentd-sut", "../results/3.1worker.memory/data/fluentd-sut", 
+    # "../results/1.2worker.memory/data/fluentd-sut", "../results/2.2worker.memory/data/fluentd-sut", "../results/3.2worker.memory/data/fluentd-sut",
+    # "../results/1.4worker.memory/data/fluentd-sut", "../results/2.4worker.memory/data/fluentd-sut", "../results/3.4worker.memory/data/fluentd-sut",
+    "../results/1.6worker.memory/data/fluentd-sut", "../results/2.6worker.memory/data/fluentd-sut", "../results/3.6worker.memory/data/fluentd-sut",
+    "../results/4.6worker.memory/data/fluentd-sut",])
                
 
-# plot_throughput(["../results/1.1worker.memory/data/sink-01", "../results/2.1worker.memory/data/sink-01", "../results/3.1worker.memory/data/sink-01"])
+plot_throughput(["../results/1.6worker.memory/data/sink-01", "../results/2.6worker.memory/data/sink-01", "../results/3.6worker.memory/data/sink-01", "../results/4.6worker.memory/data/sink-01"])

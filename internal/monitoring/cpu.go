@@ -15,13 +15,11 @@ type CPUStats struct {
 
 // GetCpuStats retrieves the current CPU usage percentage since the last call.
 func (m *CPUMonitor) GetStats() (interface{}, error) {
-	// Retrieve per-CPU times
 	percent, err := cpu.Percent(0, true)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving CPU times: %v", err)
 	}
 
-	// Create a new CPUStats instance
 	stats := &CPUStats{
 		Percentage: percent,
 	}

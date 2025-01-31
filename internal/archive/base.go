@@ -58,6 +58,7 @@ func NewFileArchiveClient(filePath string, metadata string) (*ArchiveClient, err
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
 
+	// Get the block size of the system, and use it to optimize the buffer size
 	bs, err := systemsBlockSize()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get block size: %w", err)
@@ -83,6 +84,12 @@ func NewFileArchiveClient(filePath string, metadata string) (*ArchiveClient, err
 
 }
 
+// Start starts the archive client
+//
+// Goroutines:
+//   - Debug mode: If enabled, starts a goroutine that continuously reads from the
+//     write channel, and discards the data.
+//   - File writing: Starts a goroutine to handle writing data to a file.
 func (ac *ArchiveClient) Start() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -102,6 +109,8 @@ func (ac *ArchiveClient) Start() {
 	go ac.writeToFile()
 }
 
+// writeToFile writes the data from the write channel to the file using the writer
+// from the bufio package.
 func (ac *ArchiveClient) writeToFile() {
 	for line := range ac.writeChan {
 		ac.writer.WriteString(line)
