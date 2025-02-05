@@ -14,7 +14,7 @@ The repository is structured as follows:
 
 - `internal/`: Contains the internal packages used by the components.
 - `infrastucture/`: Contains the terraform files to create the necessary infrastructure on GCP.
-- `analysis/`: Contains a Spyder notebook to analyze the results of the benchmark.
+- `analysis/`: Contains a Spyder notebook to preprocess and analyze the data.
 - `scripts/`: Contains scripts to run the benchmark and load the resulting data from the GCP instance.
 
 ## Setup
@@ -87,6 +87,9 @@ sudo bash ./scripts/get_data.sh 4 1 1001
 ### Analyzing the Data:
 
 To analyze the data, use the spyder notebook in the `analysis` directory.
+
+- First use the scriots in `preprocess.py` to preprocess the data.
+- Then use the `analysis.py` to analyze the data.
 
 ### Helpfull commands:
 
