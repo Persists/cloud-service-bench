@@ -132,7 +132,7 @@ def plot_cpu(processed_dateframes, title, which_worker_count=[1, 2, 4, 6, 8, 10,
     '''
 
     plotted_workers = set()
-    plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
 
     for experimentId, data in processed_dateframes.items():
         if which_id is not None and experimentId not in which_id:
@@ -157,13 +157,17 @@ def plot_cpu(processed_dateframes, title, which_worker_count=[1, 2, 4, 6, 8, 10,
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 
+    # save as pdf
+    name = title.replace(" ", "_")
+    fig.savefig(f"results/charts/{name}.pdf", bbox_inches='tight')    
+
 def plot_memory(processed_dateframes, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
     '''
     This function plots the memory usage over time for the given processed dataframes.
     '''
     
     plotted_workers = set()
-    plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
 
     for experimentId, data in processed_dateframes.items():
         if which_id is not None and experimentId not in which_id:
@@ -187,6 +191,10 @@ def plot_memory(processed_dateframes, title, which_worker_count=[1, 2, 4, 6, 8, 
     plt.grid(True)
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
+
+    # save as pdf
+    name = title.replace(" ", "_")
+    fig.savefig(f"results/charts/{name}.pdf", bbox_inches='tight')    
 
 def plot_throughput_boxplots(throughput_dfs, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
     '''
@@ -213,12 +221,18 @@ def plot_throughput_boxplots(throughput_dfs, title, which_worker_count=[1, 2, 4,
 
         plotted_workers.add(worker_count)
 
-    plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
     plt.boxplot(data_to_plot, labels=labels, showfliers=False)
     plt.ylabel("Throughput (logs/second)")
     plt.title(title)
     plt.grid(True)
+
+
     plt.show()
+
+    # save as pdf
+    name = title.replace(" ", "_")
+    fig.savefig(f"results/charts/{name}.pdf", bbox_inches='tight')    
 
 def plot_throughput_linechart(throughput_dfs, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
     '''
@@ -228,7 +242,7 @@ def plot_throughput_linechart(throughput_dfs, title, which_worker_count=[1, 2, 4
     '''
     
     plotted_workers = set()
-    plt.figure(figsize=(12, 6))
+    fig = plt.figure(figsize=(12, 6))
 
     for experimentId, data in throughput_dfs.items():
         if which_id is not None and experimentId not in which_id:
@@ -252,6 +266,11 @@ def plot_throughput_linechart(throughput_dfs, title, which_worker_count=[1, 2, 4
     plt.grid(True)
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
+
+    # save as pdf
+    name = title.replace(" ", "_")
+    fig.savefig(f"results/{name}.pdf", bbox_inches='tight')
+    
 
 # %%
 def plot_throughput_barplots(cleaned_dfs, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
@@ -292,7 +311,7 @@ def plot_throughput_barplots(cleaned_dfs, title, which_worker_count=[1, 2, 4, 6,
     color_map = {wc: WORKER_COUNT_COLORS[wc] for wc in unique_worker_counts}
     bar_colors = [color_map[wc] for wc in colors]
 
-    plt.figure(figsize=(14, 6))
+    fig = plt.figure(figsize=(14, 6))
     bars = plt.bar(labels, data_to_plot, color=bar_colors)
     plt.ylabel("Throughput (logs/second)")
     plt.xlabel("Experiment ID")
@@ -307,6 +326,10 @@ def plot_throughput_barplots(cleaned_dfs, title, which_worker_count=[1, 2, 4, 6,
     plt.legend(handles, [f"Workers: {wc}" for wc in unique_worker_counts], title="Number of Workers", bbox_to_anchor=(1.05, 1), loc='upper left')
 
     plt.show()
+
+    # save as pdf
+    name = title.replace(" ", "_")
+    fig.savefig(f"results/charts/{name}.pdf", bbox_inches='tight')    
 
 
 def clean_the_throughput_data(throughput_dfs):
