@@ -5,7 +5,6 @@ Created on Sat Jan 25 21:00:27 2025
 
 @author: jonasheisterberg
 """
-
 # %%
 import json
 import os
@@ -13,10 +12,27 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
         
+# %%
+# Define the constants and functions
 preprocessed_dir = "./results/preprocessed"
 warm_up_cut=pd.Timedelta(seconds=30)
 duration_cut=pd.Timedelta(minutes=10)
 
+EXPERIMENT_ID_COLORS = {
+    12002: "#1f77b4", 12001: "#ff7f0e", 10001: "#2ca02c", 8003: "#d62728",
+    8002: "#9467bd", 8001: "#8c564b", 6004: "#e377c2", 6002: "#7f7f7f", 6001: "#bcbd22",
+    4003: "#17becf", 4002: "#1a55FF", 4001: "#FF69B4", 2003: "#33A1C9",
+    2002: "#FF4500", 2001: "#32CD32", 1003: "#FFD700", 1002: "#DA70D6", 1001: "#8A2BE2"
+}
+
+WORKER_COUNT_COLORS = {
+    1: "#1f77b4", 2: "#ff7f0e", 3: "#2ca02c", 4: "#d62728",
+    6: "#9467bd", 8: "#8c564b", 10: "#e377c2", 12: "#7f7f7f"
+}
+
+
+
+# %%
 def read_preprocessed_file(file_path):
     '''This function reads a preprocessed file and returns the data.'''
     with open(file_path, "r") as file:
@@ -127,7 +143,7 @@ def plot_cpu(processed_dateframes, title, which_worker_count=[1, 2, 4, 6, 8, 10,
 
         df = data["df"]
         label = f"Number of Workers: {worker_count}" if not allow_duplicates else f"Number of Workers: {worker_count} \n (id: {experimentId})"
-        plt.plot(df["Elapsed Time"] / pd.Timedelta(minutes=1), df["cpu"], label=label)
+        plt.plot(df["Elapsed Time"] / pd.Timedelta(minutes=1), df["cpu"], label=label, color=EXPERIMENT_ID_COLORS[experimentId])
 
         plotted_workers.add(worker_count)
 
@@ -158,7 +174,7 @@ def plot_memory(processed_dateframes, title, which_worker_count=[1, 2, 4, 6, 8, 
 
         df = data["df"]
         label = f"Number of Workers: {worker_count}" if not allow_duplicates else f"Number of Workers: {worker_count} \n (id: {experimentId})"
-        plt.plot(df["Elapsed Time"] / pd.Timedelta(minutes=1), df["used_memory"], label=label)
+        plt.plot(df["Elapsed Time"] / pd.Timedelta(minutes=1), df["used_memory"], label=label, color=EXPERIMENT_ID_COLORS[experimentId])
 
         plotted_workers.add(worker_count)
 
@@ -204,10 +220,6 @@ def plot_throughput_boxplots(throughput_dfs, title, which_worker_count=[1, 2, 4,
     plt.grid(True)
     plt.show()
 
-
-
-
-
 def plot_throughput_linechart(throughput_dfs, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
     '''
     This function plots the throughput over time for the given processed dataframes.
@@ -228,7 +240,7 @@ def plot_throughput_linechart(throughput_dfs, title, which_worker_count=[1, 2, 4
         df = data["df"]
         label = f"Number of Workers: {worker_count}" if not allow_duplicates else f"Number of Workers: {worker_count} \n (id: {experimentId})"
 
-        plt.plot(df["Elapsed Time"] / pd.Timedelta(minutes=1), df["throughput_per_second_smoothed"], label=label)
+        plt.plot(df["Elapsed Time"] / pd.Timedelta(minutes=1), df["throughput_per_second_smoothed"], label=label, color=EXPERIMENT_ID_COLORS[experimentId])
 
         plotted_workers.add(worker_count)
 
@@ -241,8 +253,7 @@ def plot_throughput_linechart(throughput_dfs, title, which_worker_count=[1, 2, 4
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 
-    # %%
-
+# %%
 def plot_throughput_barplots(cleaned_dfs, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
     '''
     This function plots barplots for the throughput data for the given processed dataframes.
@@ -278,8 +289,8 @@ def plot_throughput_barplots(cleaned_dfs, title, which_worker_count=[1, 2, 4, 6,
         plotted_workers.add(worker_count)
 
     unique_worker_counts = sorted(set(colors))
-    color_map = {worker_count: plt.cm.tab20(i / len(unique_worker_counts)) for i, worker_count in enumerate(unique_worker_counts)}
-    bar_colors = [color_map[worker_count] for worker_count in colors]
+    color_map = {wc: WORKER_COUNT_COLORS[wc] for wc in unique_worker_counts}
+    bar_colors = [color_map[wc] for wc in colors]
 
     plt.figure(figsize=(14, 6))
     bars = plt.bar(labels, data_to_plot, color=bar_colors)
@@ -377,7 +388,7 @@ plot_cpu(metrics_dfs, "CPU Load Fluentd with Different Number of Workers",
 
 plot_memory(metrics_dfs, "Memory Usage Fluentd with Different Number of Workers",
             allow_duplicates=False, which_id=[
-                1001, 2002, 4002, 6002
+                1001, 2001, 4001, 6001
             ])
 
 plot_throughput_boxplots(resampled_raw_dfs, "Throughput Fluentd for 6 Concurrent Workers",
