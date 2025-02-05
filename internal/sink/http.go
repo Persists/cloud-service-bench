@@ -25,8 +25,8 @@ func NewHttpSink(archiver archive.Archiver) *HttpSink {
 	}
 }
 
-// Handler is the HTTP handler for the sink
-// It reads the body of the request, decodes the JSON log messages, and writes them to the archiver
+// Handler is the HTTP handler for the sink.
+// It reads the body of the request, decodes the JSON log messages, and writes them to the archiver.
 func (hs *HttpSink) Handler(w http.ResponseWriter, r *http.Request) {
 	requestTime := time.Now()
 	fmt.Println("Received request at", requestTime)
