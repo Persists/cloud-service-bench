@@ -166,7 +166,7 @@ def plot_memory(processed_dateframes, title, which_worker_count=[1, 2, 4, 6, 8, 
     plt.xlabel("Elapsed Time (minutes)")
     plt.ylabel("Memory Usage (MB)")
     plt.title(title)
-    plt.ylim(0, 16*1024)  # Set y-axis limits
+    plt.ylim(0, 4*1024)  # Set y-axis limits
     plt.legend()
     plt.grid(True)
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -204,7 +204,44 @@ def plot_throughput_boxplots(throughput_dfs, title, which_worker_count=[1, 2, 4,
     plt.grid(True)
     plt.show()
 
-# %%
+
+
+
+
+def plot_throughput_linechart(throughput_dfs, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
+    '''
+    This function plots the throughput over time for the given processed dataframes.
+
+    It uses the smoothed throughput for better visualization.
+    '''
+    
+    plotted_workers = set()
+    plt.figure(figsize=(12, 6))
+
+    for experimentId, data in throughput_dfs.items():
+        if which_id is not None and experimentId not in which_id:
+            continue
+        worker_count = data["worker_count"]
+        if not allow_duplicates and worker_count in plotted_workers or worker_count not in which_worker_count:
+            continue
+
+        df = data["df"]
+        label = f"Number of Workers: {worker_count}" if not allow_duplicates else f"Number of Workers: {worker_count} \n (id: {experimentId})"
+
+        plt.plot(df["Elapsed Time"] / pd.Timedelta(minutes=1), df["throughput_per_second_smoothed"], label=label)
+
+        plotted_workers.add(worker_count)
+
+    plt.axvspan(0, 30 / 60, color='red', alpha=0.3, label='Warmup Time')
+    plt.xlabel("Elapsed Time (minutes)")
+    plt.ylabel("Throughput (logs/second)")
+    plt.title(title)
+    plt.legend()    
+    plt.grid(True)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.show()
+
+    # %%
 
 def plot_throughput_barplots(cleaned_dfs, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
     '''
@@ -244,7 +281,7 @@ def plot_throughput_barplots(cleaned_dfs, title, which_worker_count=[1, 2, 4, 6,
     color_map = {worker_count: plt.cm.tab20(i / len(unique_worker_counts)) for i, worker_count in enumerate(unique_worker_counts)}
     bar_colors = [color_map[worker_count] for worker_count in colors]
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(14, 6))
     bars = plt.bar(labels, data_to_plot, color=bar_colors)
     plt.ylabel("Throughput (logs/second)")
     plt.xlabel("Experiment ID")
@@ -308,86 +345,57 @@ def clean_the_throughput_data(throughput_dfs):
 
     return cleaned_throughput_dfs
 
-
-
-def plot_throughput_linechart(throughput_dfs, title, which_worker_count=[1, 2, 4, 6, 8, 10, 12], allow_duplicates=True, which_id=None):
-    '''
-    This function plots the throughput over time for the given processed dataframes.
-
-    It uses the smoothed throughput for better visualization.
-    '''
-    
-    plotted_workers = set()
-    plt.figure(figsize=(12, 6))
-
-    for experimentId, data in throughput_dfs.items():
-        if which_id is not None and experimentId not in which_id:
-            continue
-        worker_count = data["worker_count"]
-        if not allow_duplicates and worker_count in plotted_workers or worker_count not in which_worker_count:
-            continue
-
-        df = data["df"]
-        label = f"Number of Workers: {worker_count}" if not allow_duplicates else f"Number of Workers: {worker_count} \n (id: {experimentId})"
-
-        plt.plot(df["Elapsed Time"] / pd.Timedelta(minutes=1), df["throughput_per_second_smoothed"], label=label)
-
-        plotted_workers.add(worker_count)
-
-    plt.axvspan(0, 30 / 60, color='red', alpha=0.3, label='Warmup Time')
-    plt.xlabel("Elapsed Time (minutes)")
-    plt.ylabel("Throughput (logs/second)")
-    plt.title(title)
-    plt.legend()    
-    plt.grid(True)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.show()
-
 # %%
+# Read the preprocessed data and convert it to pandas DataFrames
+
 throughput_dfs = throughput_to_dateframes(preprocessed_dir)
-resampled_dfs = resample_to_rolling_throughput(throughput_dfs)
+resampled_raw_dfs = resample_to_rolling_throughput(throughput_dfs)
 
 metrics_dfs=metrics_to_dataframes(preprocessed_dir)
 
 # sort and reverse dfs by experiment id
-resampled_dfs = dict(sorted(resampled_dfs.items(), key=lambda x: x[0], reverse=True))
+resampled_raw_dfs = dict(sorted(resampled_raw_dfs.items(), key=lambda x: x[0], reverse=True))
+metrics_dfs = dict(sorted(metrics_dfs.items(), key=lambda x: x[0], reverse=True))
 
-# plot_throughput_boxplots(resampled_dfs, "Throughput Fluentd with Different Number of Workers",
-#                          allow_duplicates=False, which_id=[
-#                             1001, 2001, 4001, 6001
-#                         ])
+# %%
+# Plot the raw data
 
-# plot_throughput_linechart(resampled_dfs, "Throughput Fluentd with Different Number of Workers",
-#                          allow_duplicates=False, which_id=[
-#                             1001, 2001, 4001, 6001
-#                         ])
+plot_throughput_boxplots(resampled_raw_dfs, "Throughput Fluentd with Different Number of Workers",
+                         allow_duplicates=False, which_id=[
+                            1001, 2001, 4001, 6001
+                        ])
 
-# plot_cpu(metrics_dfs, "CPU Load Fluentd with Different Number of Workers",
-#          allow_duplicates=False, which_id=[
-#             1001, 2001, 4001, 6001
-#         ])
+plot_throughput_linechart(resampled_raw_dfs, "Throughput Fluentd with Different Number of Workers",
+                         allow_duplicates=False, which_id=[
+                            1001, 2001, 4001, 6001
+                        ])
 
-# plot_memory(metrics_dfs, "Memory Usage Fluentd with Different Number of Workers",
-#             allow_duplicates=False, which_id=[
-#                 1001, 2002, 4002, 6002
-#             ])
+plot_cpu(metrics_dfs, "CPU Load Fluentd with Different Number of Workers",
+         allow_duplicates=False, which_id=[
+            1001, 2001, 4001, 6001
+        ])
 
-plot_throughput_boxplots(resampled_dfs, "Throughput Fluentd for 6 Concurrent Workers",
+plot_memory(metrics_dfs, "Memory Usage Fluentd with Different Number of Workers",
+            allow_duplicates=False, which_id=[
+                1001, 2002, 4002, 6002
+            ])
+
+plot_throughput_boxplots(resampled_raw_dfs, "Throughput Fluentd for 6 Concurrent Workers",
                          allow_duplicates=True, which_worker_count=[6])
 
-# plot_throughput_boxplots(resampled_dfs, "Throughput Fluentd for 4 Concurrent Workers",
-#                             allow_duplicates=True, which_worker_count=[4])
+plot_throughput_boxplots(resampled_raw_dfs, "Throughput Fluentd for 4 Concurrent Workers",
+                            allow_duplicates=True, which_worker_count=[4])
 
-# plot_throughput_boxplots(resampled_dfs, "Throughput Fluentd for 2 Concurrent Workers",
-#                             allow_duplicates=True, which_worker_count=[2])
+plot_throughput_boxplots(resampled_raw_dfs, "Throughput Fluentd for 2 Concurrent Workers",
+                            allow_duplicates=True, which_worker_count=[2])
 
-# plot_throughput_boxplots(resampled_dfs, "Throughput Fluentd for 1 Concurrent Workers",
-#                             allow_duplicates=True, which_worker_count=[1])
-
+plot_throughput_boxplots(resampled_raw_dfs, "Throughput Fluentd for 1 Concurrent Workers",
+                            allow_duplicates=True, which_worker_count=[1])
 
 
 # %%
-cleaned_throughput_dfs = clean_the_throughput_data(resampled_dfs)
+# Plot the cleaned data (without outliers)
+cleaned_throughput_dfs = clean_the_throughput_data(resampled_raw_dfs)
 
 plot_throughput_barplots(cleaned_throughput_dfs, "Mean Throughput for Different Number of Workers",
                             which_worker_count=[1,2,4,6])
@@ -411,3 +419,31 @@ for experimentId, data in cleaned_throughput_dfs.items():
 
 stats_df = pd.DataFrame(stats)
 stats_df.to_csv("results/stats.csv", index=False)
+
+
+# %%
+# Plot the anomalies
+
+plot_throughput_linechart(resampled_raw_dfs, "Anomalies in Throughput Fluentd with Different Number of Workers",
+                             which_worker_count=[8, 10, 12])
+
+plot_throughput_barplots(cleaned_throughput_dfs, "Anomalies in Mean Throughput for Different Number of Workers",
+                            which_worker_count=[1,2,4,6, 8, 10, 12])
+
+plot_cpu(metrics_dfs, "Anomalies in CPU Load Fluentd with 8 Workers",
+            which_worker_count=[8])
+
+plot_cpu(metrics_dfs, "Anomalies in CPU Load Fluentd with 10 and 12 Workers",
+            which_worker_count=[10, 12])
+
+plot_memory(metrics_dfs, "Anomalies in Memory Usage Fluentd with 8 Workers",
+                which_worker_count=[8])
+
+plot_memory(metrics_dfs, "Anomalies in Memory Usage Fluentd with Different Number of Workers",
+                which_worker_count=[8, 10, 12])
+
+plot_throughput_boxplots(resampled_raw_dfs, "Anomalies in Throughput Fluentd with 8 Workers",
+                            which_worker_count=[8])
+
+plot_throughput_boxplots(resampled_raw_dfs, "Anomalies in Throughput Fluentd with 10 and 12 Workers",
+                            which_worker_count=[10, 12])
